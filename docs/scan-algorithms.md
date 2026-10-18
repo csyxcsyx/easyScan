@@ -1,6 +1,6 @@
 # 扫描算法研究与验证记录（2026-10-15）
 
-本轮实现采用近年文档处理研究中的设计原则，保持 Windows x64、离线 CPU 和原有模型。Release 构建零警告、零错误；完整回归 **246 项断言通过**（原 232 项全部保留），另有独立 PDF 和研究基准检查。没有创建 commit、发布或更新 dist 便携包。
+本文记录 1.3.0 扫描优化的设计与 2026-10-15 实测。当前构建及验证入口见 [验证记录](verification.md)和[开发指南](development.md)。这些历史性能数据不作为每台设备的性能承诺。
 
 ## 研究来源与实际采用范围
 
@@ -76,39 +76,10 @@ H-DIBCO 使用标准前景 F1，自行计算；没有把它称为官方伪 F 值
 - [H-DIBCO 2018 官方数据与真值](https://vc.ee.duth.gr/h-dibco2018/benchmark/)：下载约 25 MB，SHA-256 固定在下载脚本和 manifest。官方提供科研基准，但未发现明确再分发许可；仅存放在被忽略的 artifacts，不随程序发布。
 - [GCDRNet / RealDAE 作者仓库](https://github.com/ZZZHANG-jx/GCDRNet)：固定提交 `415c97a9a64d0a796dbbad43485ce2ab102f2a7d` 的一张中文书页照片用于前后目视检查，仓库代码标示 MIT，图片未发现单独授权，本次仅作本地验证。本次没有该照片的人工配对真值或逐字转录，不能给它计算真实 CER/PSNR，也不将模型生成的 enhanced 示例当成真值。
 - 未下载完整 RealDAE、9 GB SD7K 或其训练权重。没有原始真实证书/证件参考照片，所以真实证件和更广泛中英混排仍需补充验收，不能从合成集外推“所有照片识别率提高”。
-- 本次未加入大型图像恢复网络；新增模型体积 **0 字节**，固定模型及字典资产仍约 22.5 MB。Core DLL 从 150,528 增至 167,424 字节（增加 16.5 KiB）；未重新打包便携目录，不报告未经测量的新便携包体积。
+- 该轮算法优化没有增加大型恢复网络或模型资产，固定模型及字典仍约 22.5 MB。分发体积以对应 Release 的实际 ZIP 为准。
 
 ## 重现入口
 
-```powershell
-# 全部回归与新增算法专项
-dotnet run --project tests/EasyScan.Tests -c Release -- artifacts/research-final
-dotnet run --project tests/EasyScan.Tests -c Release -- artifacts/research-focused --research-only
-python scripts/VerifyOcrPdf.py artifacts/research-final/扫描优化/pdf-checks.json
+完整命令集中在 [开发指南](development.md)，避免重复维护。基准检查包括速度预算、黑白峰值内存、像素一致性、质量均值、OCR、长行及批量稳定性。
 
-# 验证集下载只用于开发；运行程序不需要 Python 或网络
-python scripts/FetchResearchSamples.py
-
-dotnet build scripts/EasyScan.Benchmarks -c Release
-# 两个版本必须分进程运行；baseline DLL 是修改前保存在 artifacts/research-baseline 的快照
-# 完整的前后对照与所有验收门槛（按顺序运行，避免相互干扰）
-powershell -ExecutionPolicy Bypass -File scripts/RunResearchBenchmarks.ps1
-
-# 也可单独测量 binary；第三个参数还支持 enhance / quality / holdout / batch / dibco / ocr / ocr-long / real / numeric
-dotnet scripts/EasyScan.Benchmarks/bin/Release/net10.0-windows/EasyScan.Benchmarks.dll artifacts/research-baseline/EasyScan.Core.dll artifacts/research-bench/baseline-binary.json binary 15
-dotnet scripts/EasyScan.Benchmarks/bin/Release/net10.0-windows/EasyScan.Benchmarks.dll src/EasyScan.Core/bin/Release/net10.0-windows/EasyScan.Core.dll artifacts/research-bench/current-binary.json binary 15
-python scripts/VerifyResearchBenchmarks.py
-```
-
-基准输入固定，工具不改动用户文件。独立验证器检查速度预算（中位数 ≤110%、P95 ≤120%）、黑白内存至少降低 20%、像素一致性、质量均值、普通 OCR 无退化、长行改善及批量工作集稳定。它要求对应模式的前后 JSON 都已生成。
-
-运行产物：`artifacts/research-final/` 为完整回归，`artifacts/research-bench/` 为逐项指标和前后图，`artifacts/research-data/manifest.json` 为来源和校验记录。基准样本、下载文件、旧 DLL 及输出图片均不进入便携包。
-
-
-## 对比图
-
-合成开发图（输入含阴影；真值、旧版及新版并列见本地 `artifacts/research-bench/comparison.html`）：
-
-![新版彩色阴影校正](artifacts/research-bench/current-quality-output.png)
-
-真实中文书页的原图、旧版和新版也在对比页中；仅作目视检查，不能据此声明真实证件精度。
+原始指标和前后图生成在本地 `artifacts/research-bench/`；公开样本来源记录在 `artifacts/research-data/manifest.json`。这些文件不进入源码仓库或便携包，首次克隆后需按开发指南生成。

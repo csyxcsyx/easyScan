@@ -1,7 +1,11 @@
 ﻿param([string]$OutputDirectory = '')
 $ErrorActionPreference = 'Stop'
 $taskRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-if ([string]::IsNullOrWhiteSpace($OutputDirectory)) { $OutputDirectory = Join-Path $taskRoot 'dist/easyScan-1.3-win-x64' }
+$taskProject = Join-Path $taskRoot 'src/EasyScan.Desktop/EasyScan.Desktop.csproj'
+$taskProjectXml = [xml](Get-Content -LiteralPath $taskProject -Raw)
+$taskVersion = $taskProjectXml.SelectSingleNode('/Project/PropertyGroup/Version').InnerText
+if ($taskVersion -notmatch '^\d+\.\d+\.\d+$') { throw 'Expected a three-part release version in the Desktop project.' }
+if ([string]::IsNullOrWhiteSpace($OutputDirectory)) { $OutputDirectory = Join-Path $taskRoot "dist/easyScan-$taskVersion-win-x64" }
 $taskOutput = [System.IO.Path]::GetFullPath($OutputDirectory)
 $taskModelDirectory = Join-Path $taskRoot 'models/ocr'
 $taskModelManifest = Join-Path $taskModelDirectory 'manifest.json'
@@ -12,12 +16,20 @@ foreach ($taskModel in (Get-Content -LiteralPath $taskModelManifest -Raw | Conve
     throw "OCR asset is missing or corrupt: $($taskModel.file). Run python scripts/FetchOcrModels.py."
   }
 }
-& dotnet publish (Join-Path $taskRoot 'src/EasyScan.Desktop/EasyScan.Desktop.csproj') -c Release -r win-x64 --self-contained true -o $taskOutput -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false
+& dotnet publish $taskProject -c Release -r win-x64 --self-contained true -o $taskOutput -p:RestoreLockedMode=true -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false
 if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
-Copy-Item -LiteralPath (Join-Path $taskRoot 'README.md') -Destination (Join-Path $taskOutput '使用说明.md') -Force
+foreach ($taskModel in (Get-Content -LiteralPath $taskModelManifest -Raw | ConvertFrom-Json)) {
+  $taskPublishedModel = Join-Path $taskOutput "models/ocr/$($taskModel.file)"
+  if (!(Test-Path -LiteralPath $taskPublishedModel) -or (Get-FileHash -LiteralPath $taskPublishedModel -Algorithm SHA256).Hash -ne $taskModel.sha256) {
+    throw "Published OCR asset is missing or corrupt: $($taskModel.file)"
+  }
+}
+Copy-Item -LiteralPath (Join-Path $taskRoot 'README.md') -Destination $taskOutput -Force
+Copy-Item -LiteralPath (Join-Path $taskRoot 'CHANGELOG.md') -Destination $taskOutput -Force
 Copy-Item -LiteralPath (Join-Path $taskRoot 'THIRD-PARTY-NOTICES.md') -Destination $taskOutput -Force
-if (Test-Path -LiteralPath (Join-Path $taskRoot 'VERIFICATION.md')) { Copy-Item -LiteralPath (Join-Path $taskRoot 'VERIFICATION.md') -Destination $taskOutput -Force }
-if (Test-Path -LiteralPath (Join-Path $taskRoot 'RESEARCH_ALGORITHMS.md')) { Copy-Item -LiteralPath (Join-Path $taskRoot 'RESEARCH_ALGORITHMS.md') -Destination $taskOutput -Force }
+$taskDocs = Join-Path $taskOutput 'docs'
+New-Item -ItemType Directory -Path $taskDocs -Force | Out-Null
+Get-ChildItem -LiteralPath (Join-Path $taskRoot 'docs') -Filter '*.md' -File | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $taskDocs -Force }
 $taskLicenses = Join-Path $taskOutput 'licenses'
 New-Item -ItemType Directory -Path $taskLicenses -Force | Out-Null
 Get-ChildItem -LiteralPath (Join-Path $taskRoot 'licenses') -File | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $taskLicenses -Force }
@@ -31,18 +43,30 @@ $taskSeen = @{}
 foreach ($taskFramework in $taskLock.dependencies.PSObject.Properties) {
   foreach ($taskDependency in $taskFramework.Value.PSObject.Properties) {
     $taskName = $taskDependency.Name.ToLowerInvariant()
-    $taskVersion = $taskDependency.Value.resolved
-    if (!$taskVersion -or $taskSeen.ContainsKey("$taskName/$taskVersion")) { continue }
-    $taskSeen["$taskName/$taskVersion"] = $true
-    $taskPackagePath = Join-Path $taskPackages "$taskName/$taskVersion"
+    $taskPackageVersion = $taskDependency.Value.resolved
+    if (!$taskPackageVersion -or $taskSeen.ContainsKey("$taskName/$taskPackageVersion")) { continue }
+    $taskSeen["$taskName/$taskPackageVersion"] = $true
+    $taskPackagePath = Join-Path $taskPackages "$taskName/$taskPackageVersion"
     if (!(Test-Path -LiteralPath $taskPackagePath)) { continue }
     Get-ChildItem -LiteralPath $taskPackagePath -Filter '*.nuspec' -File | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $taskLicenses -Force }
     $taskDocuments = Get-ChildItem -LiteralPath $taskPackagePath -File -Recurse | Where-Object { $_.Name -match '^(LICENSE|LICENCE|NOTICE|COPYING|THIRD-PARTY)' -and $_.Extension -in @('.txt','.md','') }
     foreach ($taskDocument in $taskDocuments) {
-      Copy-Item -LiteralPath $taskDocument.FullName -Destination (Join-Path $taskLicenses "$taskName-$taskVersion-$($taskDocument.Name)") -Force
+      Copy-Item -LiteralPath $taskDocument.FullName -Destination (Join-Path $taskLicenses "$taskName-$taskPackageVersion-$($taskDocument.Name)") -Force
     }
   }
 }
+$taskSourceCommit = (& git -C $taskRoot rev-parse HEAD 2>$null)
+if ($LASTEXITCODE -ne 0) { $taskSourceCommit = $null }
+$taskSourceDirty = if ($taskSourceCommit) { [bool](& git -C $taskRoot status --porcelain --untracked-files=normal) } else { $null }
+@{
+  Version = $taskVersion
+  SourceCommit = $taskSourceCommit
+  SourceDirty = $taskSourceDirty
+  RuntimeIdentifier = 'win-x64'
+  SelfContained = $true
+} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $taskOutput 'build-info.json') -Encoding utf8
 $taskArchive = Join-Path (Split-Path $taskOutput -Parent) ((Split-Path $taskOutput -Leaf) + '.zip')
 Compress-Archive -LiteralPath $taskOutput -DestinationPath $taskArchive -Force
+$taskArchiveHash = (Get-FileHash -LiteralPath $taskArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+"$taskArchiveHash  $([System.IO.Path]::GetFileName($taskArchive))" | Set-Content -LiteralPath ($taskArchive + '.sha256') -Encoding ascii
 Write-Output "Portable package: $taskArchive"
