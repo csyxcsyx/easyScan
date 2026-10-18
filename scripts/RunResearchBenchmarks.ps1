@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath (Split-Path -Parent $PSScriptRoot)
 if (!(Test-Path -LiteralPath $BaselineCore)) { throw 'Provide the Core DLL saved before applying changes.' }
-$benchmarkDll = 'scripts/EasyScan.Benchmarks/bin/Release/net10.0-windows/EasyScan.Benchmarks.dll'
+$benchmarkDll = 'tools/EasyScan.Benchmarks/bin/Release/net10.0-windows/EasyScan.Benchmarks.dll'
 $currentCore = 'src/EasyScan.Core/bin/Release/net10.0-windows/EasyScan.Core.dll'
 $clean = Join-Path $Fixtures '扫描优化/中英文-原图.png'
 $long = Join-Path $Fixtures 'research-algorithms/long-line.png'
@@ -15,7 +15,7 @@ $real = Join-Path $Data 'real-photo.jpg'
 foreach ($required in @($clean, $long, $real, (Join-Path $Data 'dataset/1.bmp'))) {
     if (!(Test-Path -LiteralPath $required)) { throw "Missing $required. Run the full regression and FetchResearchSamples.py first." }
 }
-& dotnet build scripts/EasyScan.Benchmarks -c Release --no-restore
+& dotnet build tools/EasyScan.Benchmarks -c Release --no-restore
 if ($LASTEXITCODE -ne 0) { throw 'Benchmark build failed.' }
 $jobs = @(
     @{ Name='binary'; Mode='binary'; Iterations=15; Extra='' },

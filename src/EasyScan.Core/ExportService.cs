@@ -44,8 +44,7 @@ public sealed class ExportService(ImageLoader loader, DocumentProcessor processo
                     {
                         var stamp = new FileInfo(page.Source.Document.Path);
                         var sourceLength = stamp.Length; var sourceTime = stamp.LastWriteTimeUtc;
-                        using var original = await loader.LoadAsync(page.Source, dpi: settings.Dpi, cancellationToken: cancellationToken);
-                        using var prepared = await Task.Run(() => processor.Prepare(original, page.Settings, cancellationToken), cancellationToken);
+                        using var prepared = await processor.PrepareAsync(loader, page, settings.Dpi, cancellationToken);
                         var text = ocrOptions.ExportText || pdfOutput && ocrOptions.SearchablePdf
                             ? await recognition!.RecognizePreparedAsync(page, prepared, (sourceLength, sourceTime.Ticks), new RecognitionProgress(p =>
                                 progress?.Report(new(completed, pages.Count, page.Source.DisplayName, p.Stage))), cancellationToken, settings.Dpi) : null;

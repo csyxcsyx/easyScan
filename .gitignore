@@ -4,3 +4,7 @@ artifacts/
 dist/
 .vs/
 *.user
+
+# Python validation helpers
+__pycache__/
+*.py[cod]

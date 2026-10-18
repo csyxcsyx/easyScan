@@ -14,9 +14,9 @@ public sealed class OcrService(ImageLoader loader, DocumentProcessor processor, 
     private bool _disposed;
 
     public string Version => _engine.Version + "/scan-color-aware-2";
-    public async Task<OcrPageResult> RecognizeAsync(ExportPage page, IProgress<OcrProgress>? progress = null,
+    public Task<OcrPageResult> RecognizeAsync(ExportPage page, IProgress<OcrProgress>? progress = null,
         CancellationToken token = default, int dpi = 300)
-        => await RecognizeCoreAsync(page, null, null, progress, token, dpi).ConfigureAwait(false);
+        => RecognizeCoreAsync(page, null, null, progress, token, dpi);
 
     internal Task<OcrPageResult> RecognizePreparedAsync(ExportPage page, PreparedPage prepared, (long Length, long Modified) sourceVersion, IProgress<OcrProgress>? progress,
         CancellationToken token, int dpi)
@@ -37,10 +37,8 @@ public sealed class OcrService(ImageLoader loader, DocumentProcessor processor, 
                 throw new IOException("识别期间原文件发生变化，请重试。");
             if (_cache.TryGetValue(key, out var cached)) { progress?.Report(new("已复用文字结果")); return cached; }
             progress?.Report(new("正在读取原图…"));
-            using var original = prepared is null ? await loader.LoadAsync(page.Source, dpi: dpi, cancellationToken: token).ConfigureAwait(false) : null;
-            using var ownedPrepared = prepared is null ? await Task.Run(() => processor.Prepare(original!, page.Settings, token), token).ConfigureAwait(false) : null;
-            using var color = await Task.Run(() => (prepared ?? ownedPrepared!).Enhance(page.Settings with
-            { DetailEnhancement = 0, NoiseReduction = Math.Min(page.Settings.NoiseReduction, .15) }, token), token).ConfigureAwait(false);
+            using var ownedPrepared = prepared is null ? await processor.PrepareAsync(loader, page, dpi, token).ConfigureAwait(false) : null;
+            using var color = await Task.Run(() => (prepared ?? ownedPrepared!).EnhanceForOcr(page.Settings, token), token).ConfigureAwait(false);
             var result = await _engine.RecognizeAsync(color, progress, token).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
             info.Refresh();

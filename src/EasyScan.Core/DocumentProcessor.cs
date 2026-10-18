@@ -21,20 +21,36 @@ public sealed class DocumentProcessor
         cancellationToken.ThrowIfCancellationRequested();
         if (settings.CurvedEdges is { } edges && !edges.IsValidFor(settings.Crop))
             throw new ArgumentException("弯边范围无效，请重新调整。");
-        using var cropped = new PageRectifier().Rectify(original, settings, cancellationToken);
-        var rotated = new Mat();
+        var image = new PageRectifier().Rectify(original, settings, cancellationToken);
         try
         {
-            switch (((settings.QuarterTurns % 4) + 4) % 4)
+            var turns = ((settings.QuarterTurns % 4) + 4) % 4;
+            if (turns != 0)
             {
-                case 1: Cv2.Rotate(cropped, rotated, RotateFlags.Rotate90Clockwise); break;
-                case 2: Cv2.Rotate(cropped, rotated, RotateFlags.Rotate180); break;
-                case 3: Cv2.Rotate(cropped, rotated, RotateFlags.Rotate90Counterclockwise); break;
-                default: cropped.CopyTo(rotated); break;
+                var rotated = new Mat();
+                try
+                {
+                    var rotation = turns switch
+                    {
+                        1 => RotateFlags.Rotate90Clockwise,
+                        2 => RotateFlags.Rotate180,
+                        _ => RotateFlags.Rotate90Counterclockwise
+                    };
+                    Cv2.Rotate(image, rotated, rotation);
+                }
+                catch { rotated.Dispose(); throw; }
+                image.Dispose();
+                image = rotated;
             }
-            return new PreparedPage(rotated);
+            return new PreparedPage(image);
         }
-        catch { rotated.Dispose(); throw; }
+        catch { image.Dispose(); throw; }
+    }
+
+    internal async Task<PreparedPage> PrepareAsync(ImageLoader loader, ExportPage page, int dpi, CancellationToken token)
+    {
+        using var original = await loader.LoadAsync(page.Source, dpi: dpi, cancellationToken: token).ConfigureAwait(false);
+        return await Task.Run(() => Prepare(original, page.Settings, token), token).ConfigureAwait(false);
     }
 
     public Mat ConvertColor(Mat color, OutputColorMode mode, double binaryStrength = .5, CancellationToken cancellationToken = default)
@@ -93,12 +109,4 @@ public sealed class DocumentProcessor
             catch { output.Dispose(); throw; }
         }
     }
-}
-
-/// <summary>Request-scoped geometry shared by scan and OCR. Never stored in a cache.</summary>
-internal sealed class PreparedPage(Mat image) : IDisposable
-{
-    internal Mat Enhance(ScanSettings settings, CancellationToken token)
-        => new PhotoEnhancer().Enhance(image, settings, token);
-    public void Dispose() => image.Dispose();
 }
