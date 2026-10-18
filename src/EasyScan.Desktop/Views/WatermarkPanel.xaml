@@ -1,0 +1,18 @@
+<UserControl x:Class="EasyScan.Desktop.Views.WatermarkPanel" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="clr-namespace:EasyScan.Desktop.Controls">
+  <StackPanel>
+    <CheckBox IsChecked="{Binding WatermarkEnabled}"><controls:HelpLabel Text="自定义水印" Topic="watermark" TextElement.FontWeight="SemiBold"/></CheckBox>
+    <StackPanel Visibility="{Binding WatermarkEnabled, Converter={StaticResource Visible}}" Margin="0,10,0,0">
+      <TextBox Text="{Binding WatermarkText, UpdateSourceTrigger=PropertyChanged}" MaxLength="80" AutomationProperties.Name="水印文字"/>
+      <TextBlock Text="{Binding WatermarkError}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SecondaryBrush}" Margin="0,6,0,0" Visibility="{Binding HasWatermarkError, Converter={StaticResource Visible}}"/>
+      <TextBlock Text="样式" Margin="0,12,0,8"/><ComboBox ItemsSource="{Binding WatermarkStyles}" SelectedItem="{Binding WatermarkStyle}" DisplayMemberPath="Label" AutomationProperties.Name="水印样式"/>
+      <StackPanel Visibility="{Binding IsPdf, Converter={StaticResource Visible}}" Margin="0,12,0,0"><controls:HelpLabel Text="覆盖范围" Topic="target" Margin="0,0,0,8"/><ComboBox ItemsSource="{Binding WatermarkTargets}" SelectedItem="{Binding WatermarkTarget}" DisplayMemberPath="Label" AutomationProperties.Name="水印覆盖范围"/></StackPanel>
+      <Grid Margin="0,12,0,0"><controls:HelpLabel Text="透明度" Topic="opacity"/><TextBlock Text="{Binding WatermarkOpacity, StringFormat={}{0:0}%}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Slider Minimum="5" Maximum="100" Value="{Binding WatermarkOpacity}" AutomationProperties.Name="水印透明度"/>
+      <Expander Header="水印细节" Margin="0,10,0,0"><StackPanel Margin="0,8,0,0">
+        <TextBlock Text="颜色" Margin="0,0,0,8"/><ComboBox ItemsSource="{Binding WatermarkColors}" SelectedItem="{Binding WatermarkColor}" DisplayMemberPath="Label" AutomationProperties.Name="水印颜色"/>
+        <Grid Margin="0,12,0,0"><controls:HelpLabel Text="字号" Topic="fontSize"/><TextBlock Text="{Binding WatermarkSize, StringFormat={}{0:0.0}%}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Slider Minimum="1" Maximum="12" Value="{Binding WatermarkSize}" SmallChange="0.25" AutomationProperties.Name="水印字号百分比"/>
+        <StackPanel Visibility="{Binding IsAngledWatermark, Converter={StaticResource Visible}}"><Grid Margin="0,12,0,0"><controls:HelpLabel Text="倾斜角度" Topic="angle"/><TextBlock Text="{Binding WatermarkAngle, StringFormat={}{0:0}°}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Slider Minimum="-90" Maximum="90" Value="{Binding WatermarkAngle}" AutomationProperties.Name="水印倾斜角度"/></StackPanel>
+        <StackPanel Margin="0,12,0,0" Visibility="{Binding IsCornerWatermark, Converter={StaticResource Visible}}"><TextBlock Text="位置" Margin="0,0,0,8"/><ComboBox ItemsSource="{Binding WatermarkCorners}" SelectedItem="{Binding WatermarkCorner}" DisplayMemberPath="Label" AutomationProperties.Name="水印角落位置"/></StackPanel>
+      </StackPanel></Expander>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

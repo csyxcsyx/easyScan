@@ -1,0 +1,65 @@
+<UserControl x:Class="EasyScan.Desktop.Views.AdjustmentPanel" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="clr-namespace:EasyScan.Desktop.Controls">
+  <Grid Background="{DynamicResource SurfaceBrush}">
+    <Grid.RowDefinitions><RowDefinition Height="58"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <DockPanel Margin="20,0"><Button DockPanel.Dock="Right" Content="重置" Command="{Binding ResetCommand}" Foreground="{DynamicResource SecondaryBrush}"/><TextBlock Text="处理" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Margin="20,4,20,24">
+        <Border Background="{DynamicResource ShellBrush}" Padding="10,8" CornerRadius="5" Margin="0,0,0,16" Visibility="{Binding SelectedPage.HasQualityIssues, Converter={StaticResource Visible}}"><TextBlock Text="{Binding SelectedPage.QualitySummary}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SecondaryBrush}"/></Border>
+        <TextBlock Text="纸张边界" Style="{StaticResource SectionTitle}"/>
+        <UniformGrid Columns="2">
+          <Button Command="{Binding AutoDetectCommand}" Background="{DynamicResource ShellBrush}" Margin="0,0,6,0" Padding="4,8"><StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE8B9;" FontSize="14"/><TextBlock Text="重新识别"/></StackPanel></Button>
+          <Button Command="{Binding ToggleCropCommand}" Content="{Binding CropActionText}" Background="{DynamicResource ShellBrush}" Padding="4,8"/>
+        </UniformGrid>
+        <TextBlock Text="{Binding SelectedPage.CropDescription}" Style="{StaticResource SecondaryText}" Margin="0,10,0,0"/>
+        <StackPanel Margin="0,16,0,0" Visibility="{Binding IsCropping, Converter={StaticResource Visible}}" IsEnabled="{Binding CanCrop}">
+          <TextBlock Text="调整位置" Margin="0,0,0,8"/>
+          <ComboBox ItemsSource="{Binding CropHandleNames}" SelectedIndex="{Binding SelectedCropHandle}" AutomationProperties.Name="选择裁剪角点或弯边"/>
+          <CheckBox Content="显示弯边控制点" IsChecked="{Binding ShowCurveHandles}" Margin="0,12,0,0"/>
+          <CheckBox IsChecked="{Binding SelectedPage.FlattenCurvedEdges}" Margin="0,10,0,0"><controls:HelpLabel Text="弯边拉直" Topic="curve"/></CheckBox>
+          <Grid Margin="0,16,0,4"><controls:HelpLabel Text="向内收边" Topic="inset"/><TextBlock Text="{Binding SelectedPage.EdgeInset, StringFormat={}{0:0.00}%}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid>
+          <Slider Minimum="0" Maximum="2" SmallChange="0.05" LargeChange="0.25" Value="{Binding SelectedPage.EdgeInset}" AutomationProperties.Name="向内收边百分比"/>
+          <UniformGrid Columns="2" Margin="0,8,0,0"><Button Content="整张图" Command="{Binding FullFrameCommand}"/><Button Content="直线边缘" Command="{Binding StraightenEdgesCommand}"/></UniformGrid>
+        </StackPanel>
+        <StackPanel IsEnabled="{Binding CanAdjust}">
+          <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,22"/>
+          <StackPanel DataContext="{Binding SelectedPage}">
+            <controls:HelpLabel Text="增强" Topic="natural" TextElement.FontWeight="SemiBold" Margin="0,0,0,10"/>
+            <Border Background="{DynamicResource ShellBrush}" CornerRadius="6" Padding="3"><UniformGrid Columns="2"><RadioButton GroupName="Enhancement" Content="自然" IsChecked="{Binding IsNatural}" AutomationProperties.Name="自然增强"/><RadioButton GroupName="Enhancement" Content="净白" IsChecked="{Binding IsWhitePaper}" AutomationProperties.Name="纸张净白"/></UniformGrid></Border>
+            <CheckBox IsChecked="{Binding AutoExposure}" Margin="0,16,0,0"><controls:HelpLabel Text="自动曝光" Topic="exposure"/></CheckBox>
+            <Grid Margin="0,16,0,4"><controls:HelpLabel Text="去阴影" Topic="shadow"/><TextBlock Text="{Binding ShadowStrength, StringFormat={}{0:0}%}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid>
+            <Slider Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Value="{Binding ShadowStrength}" AutomationProperties.Name="去阴影强度"/>
+            <Grid Margin="0,14,0,4"><controls:HelpLabel Text="亮度" Topic="brightness"/><TextBlock Text="{Binding Brightness, StringFormat={}{0:0}}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid>
+            <Slider Minimum="-50" Maximum="50" SmallChange="1" LargeChange="10" Value="{Binding Brightness}" AutomationProperties.Name="亮度"/>
+            <Grid Margin="0,14,0,4"><controls:HelpLabel Text="对比度" Topic="contrast"/><TextBlock Text="{Binding Contrast, StringFormat={}{0:0}}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid>
+            <Slider Minimum="-50" Maximum="50" SmallChange="1" LargeChange="10" Value="{Binding Contrast}" AutomationProperties.Name="对比度"/>
+            <Expander Header="高光与色彩" Margin="0,14,0,0"><StackPanel Margin="0,8,0,0">
+              <Grid Margin="0,0,0,4"><controls:HelpLabel Text="压低高光" Topic="highlights"/><TextBlock Text="{Binding HighlightRecovery, StringFormat={}{0:0}%}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Slider Minimum="0" Maximum="100" Value="{Binding HighlightRecovery}" AutomationProperties.Name="压低高光"/>
+              <Grid Margin="0,14,0,4"><controls:HelpLabel Text="色彩增强" Topic="color"/><TextBlock Text="{Binding ColorBoost, StringFormat={}{0:0}%}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Slider Minimum="0" Maximum="100" Value="{Binding ColorBoost}" AutomationProperties.Name="色彩增强"/>
+              <CheckBox IsChecked="{Binding CorrectColorCast}" Margin="0,12,0,0"><controls:HelpLabel Text="校正偏色" Topic="cast"/></CheckBox>
+            </StackPanel></Expander>
+            <Expander Header="清晰度" Margin="0,14,0,0"><StackPanel Margin="0,8,0,0">
+              <Grid><controls:HelpLabel Text="保边降噪" Topic="denoise"/><TextBlock Text="{Binding NoiseReduction, StringFormat={}{0:0}%}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right"/></Grid>
+              <Slider Minimum="0" Maximum="100" Value="{Binding NoiseReduction}" AutomationProperties.Name="保边降噪强度"/>
+              <Grid Margin="0,12,0,0"><controls:HelpLabel Text="细节增强" Topic="detail"/><TextBlock Text="{Binding DetailEnhancement, StringFormat={}{0:0}%}" Style="{StaticResource SecondaryText}" HorizontalAlignment="Right"/></Grid>
+              <Slider Minimum="0" Maximum="100" Value="{Binding DetailEnhancement}" AutomationProperties.Name="细节增强强度"/>
+            </StackPanel></Expander>
+          </StackPanel>
+          <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,22"/>
+          <controls:HelpLabel Text="输出颜色" Topic="outputColor" TextElement.FontWeight="SemiBold" Margin="0,0,0,10"/>
+          <Border Background="{DynamicResource ShellBrush}" CornerRadius="6" Padding="3"><UniformGrid Columns="3"><RadioButton GroupName="EditorColor" Content="彩色" Padding="4,8" IsChecked="{Binding IsColor}"/><RadioButton GroupName="EditorColor" Content="灰度" Padding="4,8" IsChecked="{Binding IsGrayscale}"/><RadioButton GroupName="EditorColor" Content="黑白" Padding="4,8" IsChecked="{Binding IsBinary}"/></UniformGrid></Border>
+          <StackPanel Margin="0,12,0,0" Visibility="{Binding IsBinary, Converter={StaticResource Visible}}"><controls:HelpLabel Text="黑白强度" Topic="binary"/><Slider Minimum="0" Maximum="100" Value="{Binding BinaryStrength}" AutomationProperties.Name="黑白强度"/></StackPanel>
+          <UniformGrid Columns="2" Margin="0,18,0,0"><Button Command="{Binding RotateLeftCommand}"><StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE7AD;"/><TextBlock Text="左转"/></StackPanel></Button><Button Command="{Binding RotateRightCommand}"><StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE7AD;"><TextBlock.RenderTransform><ScaleTransform ScaleX="-1"/></TextBlock.RenderTransform></TextBlock><TextBlock Text="右转"/></StackPanel></Button></UniformGrid>
+          <Button Command="{Binding ApplyToAllCommand}" Content="应用增强到全部" Background="{DynamicResource ShellBrush}" Margin="0,16,0,0"/>
+        </StackPanel>
+        <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,22"/>
+        <controls:HelpLabel Text="文字识别" Topic="ocr" TextElement.FontWeight="SemiBold" Margin="0,0,0,10"/>
+        <UniformGrid Columns="2"><Button Content="识别当前页" Command="{Binding RecognizeCurrentCommand}" Background="{DynamicResource ShellBrush}" Margin="0,0,6,0" Padding="4,8"/><Button Content="识别选中页" Command="{Binding RecognizeSelectedCommand}" Background="{DynamicResource ShellBrush}" Padding="4,8"/></UniformGrid>
+        <UniformGrid Columns="2" Margin="0,6,0,0"><Button Content="识别全部" Command="{Binding RecognizeAllCommand}" Padding="4,8"/><Button Content="查看文字" Command="{Binding ViewOcrCommand}" Padding="4,8"/></UniformGrid>
+        <TextBlock Text="{Binding SelectedPage.OcrSummary}" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+        <TextBlock Text="{Binding SelectedPage.OcrError}" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+        <TextBlock Text="{Binding OcrProgressText}" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+        <Button Content="取消文字识别" Command="{Binding CancelOcrCommand}" Visibility="{Binding IsOcrBusy, Converter={StaticResource Visible}}" Margin="0,8,0,0"/>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

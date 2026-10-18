@@ -1,0 +1,50 @@
+<Window x:Class="EasyScan.Desktop.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:views="clr-namespace:EasyScan.Desktop.Views"
+  Title="easyScan" Icon="Assets/easyScan.ico" Width="1320" Height="840" MinWidth="800" MinHeight="480" WindowStartupLocation="CenterScreen"
+  AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop" SizeChanged="OnWindowSizeChanged" Closing="OnWindowClosing">
+  <Window.InputBindings>
+    <KeyBinding Key="O" Modifiers="Control" Command="{Binding ImportCommand}"/>
+    <KeyBinding Key="S" Modifiers="Control" Command="{Binding ExportCommand}"/>
+    <KeyBinding Key="Z" Modifiers="Control" Command="{Binding UndoCommand}"/>
+    <KeyBinding Key="Y" Modifiers="Control" Command="{Binding RedoCommand}"/>
+    <KeyBinding Key="Delete" Command="{Binding RemoveSelectedCommand}"/>
+    <KeyBinding Key="Up" Modifiers="Alt" Command="{Binding MoveUpCommand}"/>
+    <KeyBinding Key="Down" Modifiers="Alt" Command="{Binding MoveDownCommand}"/>
+    <KeyBinding Key="Escape" Command="{Binding CancelCropCommand}"/>
+  </Window.InputBindings>
+  <Grid>
+    <Grid.RowDefinitions><RowDefinition Height="72"/><RowDefinition Height="*"/><RowDefinition Height="38"/></Grid.RowDefinitions>
+    <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+      <DockPanel Margin="24,0">
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+          <Button x:Name="ImportButton" Command="{Binding ImportCommand}" Margin="0,0,8,0"><StackPanel Orientation="Horizontal"><Path Width="17" Height="15" Stretch="Uniform" Stroke="{DynamicResource TextBrush}" StrokeThickness="1.4" Data="M1,4 L1,2 L7,2 L9,4 L17,4 L17,14 L1,14 Z M1,5 L17,5" Margin="0,0,8,0"/><TextBlock Text="导入"/></StackPanel></Button>
+          <Button x:Name="ExportButton" Command="{Binding ExportCommand}" Style="{StaticResource PrimaryButton}" Padding="20,9"><StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE74E;" Foreground="{DynamicResource OnPrimaryBrush}"/><TextBlock Text="导出" Foreground="{DynamicResource OnPrimaryBrush}"/></StackPanel></Button>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <Border Width="34" Height="34" Background="{DynamicResource PrimaryBrush}" CornerRadius="9" Margin="0,0,12,0"><TextBlock Text="&#xE7A8;" FontFamily="Segoe MDL2 Assets" FontSize="19" Foreground="{DynamicResource OnPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+          <TextBlock Text="easyScan" FontFamily="Segoe UI" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
+          <Border Width="1" Height="22" Background="{DynamicResource BorderBrush}" Margin="24,0"/>
+          <Button Style="{StaticResource IconButton}" Command="{Binding UndoCommand}" ToolTip="撤销 · Ctrl+Z" AutomationProperties.Name="撤销"><TextBlock Text="&#xE7A7;" FontFamily="Segoe MDL2 Assets"/></Button>
+          <Button Style="{StaticResource IconButton}" Command="{Binding RedoCommand}" ToolTip="重做 · Ctrl+Y" AutomationProperties.Name="重做"><TextBlock Text="&#xE7A6;" FontFamily="Segoe MDL2 Assets"/></Button>
+          <Button x:Name="QueueToggle" Click="OnToggleQueue" ToolTip="显示或收起文件" AutomationProperties.Name="显示或收起文件" Style="{StaticResource IconButton}" Margin="12,0,0,0"><TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets"/></Button>
+          <Button Click="OnToggleTools" ToolTip="显示或收起处理面板" AutomationProperties.Name="显示或收起处理面板" Style="{StaticResource IconButton}"><TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets"/></Button>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid x:Name="Workspace" Grid.Row="1">
+      <Grid.ColumnDefinitions><ColumnDefinition x:Name="QueueColumn" Width="232"/><ColumnDefinition Width="*"/><ColumnDefinition x:Name="ToolsColumn" Width="272"/></Grid.ColumnDefinitions>
+      <views:FileQueueView x:Name="QueuePanel" Grid.Column="0"/>
+      <Border Grid.Column="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0"><views:PreviewPane x:Name="PreviewPanel"/></Border>
+      <views:AdjustmentPanel x:Name="ToolsPanel" Grid.Column="2"/>
+    </Grid>
+    <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+      <DockPanel Margin="20,0">
+        <TextBlock Text="本机处理" DockPanel.Dock="Right" Style="{StaticResource SecondaryText}" VerticalAlignment="Center"/>
+        <Button Content="取消" Command="{Binding CancelCommand}" DockPanel.Dock="Right" MinHeight="28" Padding="10,2" Visibility="{Binding IsBusy, Converter={StaticResource Visible}}" Margin="0,0,16,0"/>
+        <TextBlock Text="{Binding Status}" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+      </DockPanel>
+    </Border>
+    <Border x:Name="DropOverlay" Grid.RowSpan="3" Visibility="Collapsed" Background="#DDFFFFFF" BorderBrush="{DynamicResource FocusBrush}" BorderThickness="2" Margin="12" CornerRadius="8" IsHitTestVisible="False">
+      <TextBlock Text="松开以导入文件" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    </Border>
+  </Grid>
+</Window>

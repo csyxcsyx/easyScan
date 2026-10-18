@@ -1,0 +1,25 @@
+easyScan OCR and searchable PDF attribution
+
+OCR model weights, dictionary and preprocessing/postprocessing references:
+Copyright (c) PaddlePaddle Authors and RapidOCR Authors.
+Licensed under the Apache License, Version 2.0; see Apache-2.0.txt.
+https://github.com/PaddlePaddle/PaddleOCR
+https://github.com/RapidAI/RapidOCR/tree/v3.10.0
+
+The C# pipeline follows DB contour scoring / polygon expansion, perspective line
+crops, normalized BGR CHW inputs and CTC decoding from these projects. It uses
+OpenCV, Clipper2 and ONNX Runtime. No Python runtime or RapidOcrNet is distributed.
+Exact model sources and SHA-256 values are recorded in models/ocr/manifest.json.
+Upstream model rights remain with their respective copyright holders.
+
+Embedded pdf.ttf (GlyphLessFont):
+(C) Copyright 2020, Google Inc. Author: Zdenko Podobny.
+Apache License, Version 2.0; see Apache-2.0.txt.
+Copied from the byte array in Tesseract src/api/pdf_ttf.h.
+Embedded file SHA-256: dbbbba44717f3c6dfdb4ab8dd5d231ba16ef002d75cedb820824ce6063c0a5ee.
+https://github.com/tesseract-ocr/tesseract/blob/main/src/api/pdf_ttf.h
+Invisible Type0 text, CID-to-glyph mapping and Unicode mapping were informed by
+Tesseract's PDF renderer; the C# PDFsharp writer is implemented for easyScan.
+
+ONNX Runtime: MIT; see ONNX-Runtime-LICENSE.txt and ONNX-Runtime-ThirdPartyNotices.txt.
+Clipper2: Boost Software License 1.0; see Clipper2-LICENSE.txt.
